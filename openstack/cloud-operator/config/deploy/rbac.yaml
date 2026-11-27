@@ -26,7 +26,7 @@ rules:
   - apiGroups: ["iaas.cloud.io"]
     resources: ["tenantstoragepools/finalizers", "virtualnetworks/finalizers", "cloudworkspaces/finalizers"]
     verbs: ["update"]
-  - apiGroups: [""]
+  - apiGroups: ["", "events.k8s.io"]
     resources: ["events"]
     verbs: ["create", "patch"]
   - apiGroups: ["coordination.k8s.io"]

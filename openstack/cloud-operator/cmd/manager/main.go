@@ -111,7 +111,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Cloud:    cloudClients,
-		Recorder: mgr.GetEventRecorderFor("tenantstoragepool-controller"),
+		Recorder: mgr.GetEventRecorder("tenantstoragepool-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "TenantStoragePool")
 		os.Exit(1)
@@ -121,7 +121,7 @@ func main() {
 		Client:               mgr.GetClient(),
 		Scheme:               mgr.GetScheme(),
 		Cloud:                cloudClients,
-		Recorder:             mgr.GetEventRecorderFor("virtualnetwork-controller"),
+		Recorder:             mgr.GetEventRecorder("virtualnetwork-controller"),
 		DriftRequeueInterval: driftInterval,
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "VirtualNetwork")
@@ -132,7 +132,7 @@ func main() {
 		Client:   mgr.GetClient(),
 		Scheme:   mgr.GetScheme(),
 		Cloud:    cloudClients,
-		Recorder: mgr.GetEventRecorderFor("cloudworkspace-controller"),
+		Recorder: mgr.GetEventRecorder("cloudworkspace-controller"),
 	}).SetupWithManager(mgr); err != nil {
 		setupLog.Error(err, "unable to create controller", "controller", "CloudWorkspace")
 		os.Exit(1)
