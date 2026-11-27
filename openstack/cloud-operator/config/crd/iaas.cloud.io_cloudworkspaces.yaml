@@ -1,0 +1,62 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: cloudworkspaces.iaas.cloud.io
+spec:
+  group: iaas.cloud.io
+  names:
+    kind: CloudWorkspace
+    listKind: CloudWorkspaceList
+    plural: cloudworkspaces
+    singular: cloudworkspace
+    shortNames:
+      - cws
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: IP
+          type: string
+          jsonPath: .status.ipAddress
+        - name: Host
+          type: string
+          jsonPath: .status.computeHost
+        - name: OVNChassis
+          type: string
+          jsonPath: .status.ovnPortHost
+        - name: DiskGiB
+          type: integer
+          jsonPath: .status.volumeSizeGiB
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              required: ["imageName", "storageGiB", "virtualNetworkRef"]
+              properties:
+                imageName:
+                  type: string
+                flavorRef:
+                  type: string
+                  default: "m1.small"
+                storageGiB:
+                  type: integer
+                  minimum: 1
+                virtualNetworkRef:
+                  type: string
+                desiredHost:
+                  type: string
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true

@@ -1,0 +1,165 @@
+apiVersion: v1
+kind: Secret
+metadata:
+  name: cloud-operator-credentials
+  namespace: cloud-system
+type: Opaque
+stringData:
+  # Set CEPH_API_URL to your Ceph Dashboard URL, or leave empty to use MockServer.
+  CEPH_API_URL: "https://ceph-squid.example.internal:8443"
+  CEPH_API_USER: "admin"
+  CEPH_API_PASS: "admin12345!"
+  OS_AUTH_URL: "http://mini-openstack.cloud-system.svc.cluster.local:5000/v3"
+  OS_USERNAME: "admin"
+  OS_PASSWORD: "admin12345!"
+  OS_PROJECT_NAME: "admin"
+  OS_REGION_NAME: "RegionOne"
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mini-openstack
+  namespace: cloud-system
+  labels:
+    app: mini-openstack
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mini-openstack
+  template:
+    metadata:
+      labels:
+        app: mini-openstack
+    spec:
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: mini-openstack
+          image: ghcr.io/omerharuncetin/cloud-operator:latest
+          imagePullPolicy: IfNotPresent
+          command: ["/mini-openstack"]
+          args: ["--addr=:5000"]
+          envFrom:
+            - secretRef:
+                name: cloud-operator-credentials
+          ports:
+            - name: http
+              containerPort: 5000
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: 5000
+            initialDelaySeconds: 2
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 25m
+              memory: 32Mi
+            limits:
+              cpu: 250m
+              memory: 128Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: mini-openstack
+  namespace: cloud-system
+spec:
+  selector:
+    app: mini-openstack
+  ports:
+    - name: http
+      port: 5000
+      targetPort: 5000
+---
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cloud-operator
+  namespace: cloud-system
+  labels:
+    app: cloud-operator
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: cloud-operator
+  template:
+    metadata:
+      labels:
+        app: cloud-operator
+      annotations:
+        prometheus.io/scrape: "true"
+        prometheus.io/port: "8080"
+        prometheus.io/path: "/metrics"
+    spec:
+      serviceAccountName: cloud-operator
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: manager
+          image: ghcr.io/omerharuncetin/cloud-operator:latest
+          imagePullPolicy: IfNotPresent
+          args:
+            - "--metrics-bind-address=:8080"
+            - "--health-probe-bind-address=:8081"
+            - "--drift-requeue-interval=60s"
+          envFrom:
+            - secretRef:
+                name: cloud-operator-credentials
+          ports:
+            - name: metrics
+              containerPort: 8080
+            - name: probes
+              containerPort: 8081
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: 8081
+            initialDelaySeconds: 5
+            periodSeconds: 15
+          readinessProbe:
+            httpGet:
+              path: /readyz
+              port: 8081
+            initialDelaySeconds: 3
+            periodSeconds: 10
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: cloud-operator-metrics
+  namespace: cloud-system
+  labels:
+    app: cloud-operator
+spec:
+  selector:
+    app: cloud-operator
+  ports:
+    - name: metrics
+      port: 8080
+      targetPort: 8080

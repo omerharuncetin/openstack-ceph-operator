@@ -1,0 +1,67 @@
+apiVersion: apiextensions.k8s.io/v1
+kind: CustomResourceDefinition
+metadata:
+  name: tenantstoragepools.iaas.cloud.io
+spec:
+  group: iaas.cloud.io
+  names:
+    kind: TenantStoragePool
+    listKind: TenantStoragePoolList
+    plural: tenantstoragepools
+    singular: tenantstoragepool
+    shortNames:
+      - tsp
+  scope: Namespaced
+  versions:
+    - name: v1alpha1
+      served: true
+      storage: true
+      subresources:
+        status: {}
+      additionalPrinterColumns:
+        - name: Pool
+          type: string
+          jsonPath: .status.poolName
+        - name: Phase
+          type: string
+          jsonPath: .status.phase
+        - name: Ceph
+          type: string
+          jsonPath: .status.cephHealth
+        - name: Age
+          type: date
+          jsonPath: .metadata.creationTimestamp
+      schema:
+        openAPIV3Schema:
+          type: object
+          properties:
+            spec:
+              type: object
+              properties:
+                poolName:
+                  type: string
+                poolType:
+                  type: string
+                  enum: ["replicated", "erasure"]
+                  default: "replicated"
+                pgNum:
+                  type: integer
+                  minimum: 4
+                  default: 16
+                size:
+                  type: integer
+                  minimum: 1
+                minSize:
+                  type: integer
+                  minimum: 1
+                crushRule:
+                  type: string
+                application:
+                  type: string
+                  default: "rbd"
+                quotaMaxBytes:
+                  type: integer
+                  format: int64
+            status:
+              type: object
+              x-kubernetes-preserve-unknown-fields: true

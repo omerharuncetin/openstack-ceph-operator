@@ -1,0 +1,7 @@
+go 1.26.11
+
+use (
+	./ceph/ceph-client
+	./openstack/cloud-operator
+	./openstack/mini-openstack
+)

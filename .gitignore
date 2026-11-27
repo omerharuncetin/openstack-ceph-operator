@@ -1,0 +1,33 @@
+# Binaries & build outputs
+bin/
+*.exe
+*.exe~
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+coverage.html
+
+# Local runtime data (WAL, OSD storage, Raft logs)
+.data/
+data/
+*.db
+*.wal
+
+# IDE & OS
+.vscode/
+.idea/
+.DS_Store
+Thumbs.db
+
+# Secrets, certs, keyrings
+*.key
+*.pem
+*.crt
+*.keyring
+clouds.yaml
+.env
+
+# Kubebuilder / envtest assets
+testbin/

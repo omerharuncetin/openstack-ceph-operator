@@ -1,0 +1,94 @@
+name: CI — Go Test, Lint & Trivy Security Scan
+
+on:
+  push:
+    branches: ["main"]
+  pull_request:
+    branches: ["main"]
+
+permissions:
+  contents: read
+
+jobs:
+  test-and-build:
+    name: Go Vet, Race Tests & Build (${{ matrix.module }})
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - ceph/ceph-client
+          - openstack/mini-openstack
+          - openstack/cloud-operator
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache: true
+
+      - name: Run go vet
+        run: go -C ${{ matrix.module }} vet ./...
+
+      - name: Run unit & integration tests with race detector
+        run: go -C ${{ matrix.module }} test -race -count=1 -v ./...
+
+      - name: Verify binary compilation
+        run: go -C ${{ matrix.module }} build ./...
+
+  lint:
+    name: golangci-lint
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        module:
+          - ceph/ceph-client
+          - openstack/mini-openstack
+          - openstack/cloud-operator
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Go
+        uses: actions/setup-go@v5
+        with:
+          go-version-file: go.work
+          cache: true
+
+      - name: Run golangci-lint
+        uses: golangci/golangci-lint-action@v7
+        with:
+          version: latest
+          working-directory: ${{ matrix.module }}
+          args: --config=../../.golangci.yml --timeout=5m
+
+  security-scan:
+    name: Trivy Vulnerability & IaC Misconfig Scan
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      security-events: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Trivy filesystem & Go dependency scan
+        uses: aquasecurity/trivy-action@0.30.0
+        with:
+          scan-type: fs
+          scan-ref: .
+          scanners: vuln,secret,misconfig
+          severity: HIGH,CRITICAL
+          ignore-unfixed: true
+          format: sarif
+          output: trivy-results.sarif
+
+      - name: Upload Trivy SARIF report to GitHub Security
+        if: always()
+        uses: github/codeql-action/upload-sarif@v3
+        with:
+          sarif_file: trivy-results.sarif

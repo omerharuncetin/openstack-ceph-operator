@@ -1,0 +1,43 @@
+# Ceph Squid (v19) local cluster.
+# Ports:
+#   - 8443: Ceph MGR Dashboard REST API v1.0
+#   - 9283: Ceph Prometheus exporter
+#
+# Usage:
+#   docker compose -f ceph/docker-compose.yml up -d --build
+#   docker exec -it ceph-squid ceph -s
+#   docker exec -it ceph-squid /drills/openstack-rbd-drill.sh
+
+services:
+  ceph-squid:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: ceph-squid
+    hostname: ceph-squid
+    privileged: true
+    environment:
+      - CEPH_DASHBOARD_USER=admin
+      - CEPH_DASHBOARD_PASS=admin12345!
+      - OSD_SIZE_GB=6
+      - OSD_MEMORY_TARGET=1073741824
+      - INIT_OPENSTACK_POOLS=true
+    ports:
+      - "6789:6789"
+      - "3300:3300"
+      - "8443:8443"
+      - "9283:9283"
+    volumes:
+      - ceph_squid_data:/var/lib/ceph
+      - ceph_squid_etc:/etc/ceph
+    healthcheck:
+      test: ["CMD-SHELL", "timeout 4 ceph -s | grep -q 'osd: 1 osds: 1 up'"]
+      interval: 10s
+      timeout: 5s
+      retries: 18
+      start_period: 25s
+    restart: unless-stopped
+
+volumes:
+  ceph_squid_data:
+  ceph_squid_etc:

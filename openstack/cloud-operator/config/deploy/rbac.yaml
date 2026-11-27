@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cloud-system
+  labels:
+    app.kubernetes.io/part-of: cloud-iaas-platform
+    pod-security.kubernetes.io/enforce: restricted
+---
+apiVersion: v1
+kind: ServiceAccount
+metadata:
+  name: cloud-operator
+  namespace: cloud-system
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRole
+metadata:
+  name: cloud-operator-role
+rules:
+  - apiGroups: ["iaas.cloud.io"]
+    resources: ["tenantstoragepools", "virtualnetworks", "cloudworkspaces"]
+    verbs: ["get", "list", "watch", "update", "patch"]
+  - apiGroups: ["iaas.cloud.io"]
+    resources: ["tenantstoragepools/status", "virtualnetworks/status", "cloudworkspaces/status"]
+    verbs: ["get", "update", "patch"]
+  - apiGroups: ["iaas.cloud.io"]
+    resources: ["tenantstoragepools/finalizers", "virtualnetworks/finalizers", "cloudworkspaces/finalizers"]
+    verbs: ["update"]
+  - apiGroups: [""]
+    resources: ["events"]
+    verbs: ["create", "patch"]
+  - apiGroups: ["coordination.k8s.io"]
+    resources: ["leases"]
+    verbs: ["get", "list", "watch", "create", "update", "patch", "delete"]
+---
+apiVersion: rbac.authorization.k8s.io/v1
+kind: ClusterRoleBinding
+metadata:
+  name: cloud-operator-binding
+roleRef:
+  apiGroup: rbac.authorization.k8s.io
+  kind: ClusterRole
+  name: cloud-operator-role
+subjects:
+  - kind: ServiceAccount
+    name: cloud-operator
+    namespace: cloud-system

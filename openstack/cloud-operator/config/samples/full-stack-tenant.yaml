@@ -1,0 +1,47 @@
+apiVersion: iaas.cloud.io/v1alpha1
+kind: TenantStoragePool
+metadata:
+  name: tenant-gold-pool
+  namespace: default
+spec:
+  poolName: tenant-gold
+  poolType: replicated
+  pgNum: 16
+  # Omit size/minSize to use Ceph's osd_pool_default_size (set 3/2 in multi-node setups).
+  application: rbd
+---
+apiVersion: iaas.cloud.io/v1alpha1
+kind: VirtualNetwork
+metadata:
+  name: prod-app-vnet
+  namespace: default
+spec:
+  cidr: 10.50.0.0/24
+  enableDHCP: true
+  enableRouter: true
+  securityRules:
+    - direction: ingress
+      protocol: tcp
+      portMin: 22
+      portMax: 22
+      remoteCIDR: 10.0.0.0/8
+      description: Bastion SSH access
+    - direction: ingress
+      protocol: tcp
+      portMin: 443
+      portMax: 443
+      remoteCIDR: 0.0.0.0/0
+      description: Public HTTPS ingress
+---
+apiVersion: iaas.cloud.io/v1alpha1
+kind: CloudWorkspace
+metadata:
+  name: web-frontend-01
+  namespace: default
+spec:
+  imageName: ubuntu-24.04-cloudimg
+  flavorRef: m1.small
+  storageGiB: 2
+  virtualNetworkRef: prod-app-vnet
+  # Change desiredHost to "compute-02" to live-migrate the VM.
+  desiredHost: compute-01
