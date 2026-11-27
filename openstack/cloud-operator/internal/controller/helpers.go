@@ -15,15 +15,14 @@ import (
 	iaasv1alpha1 "github.com/omerharuncetin/openstack-ceph-operator/openstack/cloud-operator/api/v1alpha1"
 )
 
-// EventEmitter abstracts Kubernetes event recording so controllers work with
-// both controller-runtime's record.EventRecorder and test fakes.
+// EventEmitter matches k8s.io/client-go/tools/events.EventRecorder.
 type EventEmitter interface {
-	Eventf(object runtime.Object, eventtype, reason, messageFmt string, args ...any)
+	Eventf(regarding runtime.Object, related runtime.Object, eventtype, reason, action, note string, args ...any)
 }
 
 func emitEvent(rec EventEmitter, obj runtime.Object, eventType, reason, msgFmt string, args ...any) {
 	if rec != nil {
-		rec.Eventf(obj, eventType, reason, msgFmt, args...)
+		rec.Eventf(obj, nil, eventType, reason, reason, msgFmt, args...)
 	}
 }
 

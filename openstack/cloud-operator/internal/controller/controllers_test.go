@@ -14,7 +14,7 @@ import (
 	"k8s.io/apimachinery/pkg/runtime"
 	"k8s.io/apimachinery/pkg/types"
 	clientgoscheme "k8s.io/client-go/kubernetes/scheme"
-	"k8s.io/client-go/tools/record"
+	"k8s.io/client-go/tools/events"
 	ctrl "sigs.k8s.io/controller-runtime"
 	"sigs.k8s.io/controller-runtime/pkg/client/fake"
 
@@ -101,7 +101,7 @@ func runOperatorSuite(t *testing.T, baseCfg cloud.Config, cephMode, poolName str
 			&iaasv1alpha1.CloudWorkspace{},
 		).
 		Build()
-	recorder := record.NewFakeRecorder(64)
+	recorder := events.NewFakeRecorder(64)
 
 	poolRec := &controller.TenantStoragePoolReconciler{
 		Client:   k8sClient,
